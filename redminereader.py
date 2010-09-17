@@ -26,8 +26,6 @@ def send_mail(msg):
     from config import username,password,fromad,fromname,toad,subject
     fullmsg = "From: "+fromname+" <" +fromad+ ">\nTo: "+toad+\
             "\nSubject: "+subject+"\n\n\n"+ msg
-    print fullmsg
-    return
     # The actual mail send
     server = smtplib.SMTP('smtp.gmail.com:587')
     server.set_debuglevel(1)
@@ -42,12 +40,11 @@ def read(url):
     for i in feedObj['entries']:
         x = feedparser.time.mktime( i['updated_parsed'] )
         if x > PostTracker.mostrecent:
-            print x
             PostTracker.mostrecent = x
             print PostTracker.mostrecent
-        msgbody += i['title'] + ' -- ' + i['id'] + \
-            "\nFrom: " + i['author'] + "\n"+ '-'*72 +"\n" \
-            + re.sub(r"(\s)+", r"\1", strip_tags(i['subtitle'])) + "\n\n"
+            msgbody += i['title'] + ' -- ' + i['id'] + \
+                "\nFrom: " + i['author'] + "\n"+ '-'*72 +"\n" \
+                + re.sub(r"(\s)+", r"\1", strip_tags(i['subtitle'])) + "\n\n"
     return msgbody
 
 if __name__ == '__main__':
