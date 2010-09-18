@@ -15,6 +15,7 @@ import feedparser, re, smtplib, unicodedata
 
 class PostTracker:
      mostrecent = 1
+     onlaunch = 1
 
      def set(num):
          mostrecent = num
@@ -36,16 +37,23 @@ def send_mail(msg):
 
 def read(url):
     feedObj = feedparser.parse(url)
-    msgbody = ''
+    msgbody = {}
     for i in feedObj['entries']:
         x = feedparser.time.mktime( i['updated_parsed'] )
-        if x > PostTracker.mostrecent:
-            PostTracker.mostrecent = x
-            print PostTracker.mostrecent
-            msgbody += i['title'] + ' -- ' + i['id'] + \
-                "\nFrom: " + i['author'] + "\n"+ '-'*72 +"\n" \
-                + re.sub(r"(\s)+", r"\1", strip_tags(i['subtitle'])) + "\n\n"
+        msgbody[x] = i['title'] + ' -- ' + i['id'] + \
+            "\nFrom: " + i['author'] + "\n"+ '-'*72 +"\n" \
+            + re.sub(r"(\s)+", r"\1", strip_tags(i['subtitle'])) + "\n\n"
     return msgbody
+
+def prune(entrydict):
+    k = entrydict.keys()
+    k.sort()
+    for key in k:
+        if key > PostTracker.onlaunch:
+            #print key, 'is greater than',PostTracker.onlaunch
+            PostTracker.mostrecent = key
+            yield entrydict[key]
+
 
 if __name__ == '__main__':
     from config import feedurl
@@ -53,10 +61,12 @@ if __name__ == '__main__':
     readercountFile = os.path.expanduser("~")+'/.redminereader'
     try:
         handle = open(readercountFile,'r')
-        print  handle.read()
-        PostTracker.mostrecent = int(PostTracker.mostrecent)
+        PostTracker.onlaunch = handle.read()
+        PostTracker.onlaunch = float(PostTracker.onlaunch)
     except IOError:
-        open(readercountFile,'w').write(PostTracker.mostrecent)
-    send_mail(read(feedurl))
-    print PostTracker.mostrecent
+        open(readercountFile,'w').write(PostTracker.onlaunch)
+    r = read(feedurl)
+    msg = "\n".join([i for i in prune(r)])
+    send_mail(msg)
+    print 'Up to timesramp: ',PostTracker.mostrecent
     open(readercountFile,'w').write(str( PostTracker.mostrecent ))
